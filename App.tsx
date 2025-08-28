@@ -1,117 +1,108 @@
-
-import React, { useState, useCallback } from 'react';
-import { AppState, AgeGroup, Question, UserAnswer, TestResult } from './types';
-import AgeSelection from './components/AgeSelection';
-import Quiz from './components/Quiz';
-import Results from './components/Results';
-import LoadingSpinner from './components/LoadingSpinner';
-import ErrorDisplay from './components/ErrorDisplay';
-import { generateIQTest, analyzeResults } from './services/geminiService';
+import React, { useState, useEffect, useCallback } from 'react';
+import Header from './components/Header';
+import KeyMetrics from './components/KeyMetrics';
+import PriceChart from './components/PriceChart';
+import NewsFeed from './components/NewsFeed';
+import PredictionPanel from './components/PredictionPanel';
+import Sources from './components/Sources';
+import { MarketAnalysis } from './types';
+import { getMarketAnalysis } from './services/geminiService';
+import { ArrowPathIcon } from './components/Icon';
+import Card from './components/Card';
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>(AppState.SELECT_AGE);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [testResult, setTestResult] = useState<TestResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('');
+  const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
 
-  // New state to preserve context for retries
-  const [lastSelectedAge, setLastSelectedAge] = useState<AgeGroup | null>(null);
-  const [userAnswers, setUserAnswers] = useState<UserAnswer[] | null>(null);
-
-  const handleStartTest = useCallback(async (ageGroup: AgeGroup) => {
-    setError(null);
-    setLastSelectedAge(ageGroup);
+  const fetchDataAndAnalyze = useCallback(async () => {
     setIsLoading(true);
-    setLoadingMessage('جاري تحضير اختبار مخصص لك...');
+    setError(null);
     try {
-      const fetchedQuestions = await generateIQTest(ageGroup);
-      setQuestions(fetchedQuestions);
-      setAppState(AppState.TAKING_TEST);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'An unknown error occurred.');
-      // Stay on SELECT_AGE state to show error and allow retry
+      const result = await getMarketAnalysis();
+      setMarketAnalysis(result);
+    } catch (err) {
+      console.error(err);
+      let specificError = 'يرجى المحاولة مرة أخرى لاحقًا.';
+      if (err instanceof Error) {
+          if (err.message.includes("API_KEY")) {
+              specificError = 'يرجى التحقق من تكوين مفتاح API الخاص بك.';
+          } else if (err.message.includes("invalid format")) {
+              specificError = 'تم استلام رد بتنسيق غير صالح من خدمة الذكاء الاصطناعي.';
+          } else {
+            specificError = 'حدث خطأ غير متوقع أثناء معالجة البيانات.';
+          }
+      }
+      setError(`فشل في جلب تحليل السوق. ${specificError}`);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const performAnalysis = useCallback(async (answers: UserAnswer[]) => {
-    setError(null);
-    setIsLoading(true);
-    setLoadingMessage('نقوم الآن بتحليل إجاباتك...');
-    try {
-        const result = await analyzeResults(questions, answers);
-        setTestResult(result);
-        setAppState(AppState.SHOWING_RESULTS);
-    } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'An unknown error occurred.');
-        setTestResult(null);
-        setAppState(AppState.SHOWING_RESULTS); // Move to results page to show error
-    } finally {
-        setIsLoading(false);
-    }
-  }, [questions]);
+  useEffect(() => {
+    fetchDataAndAnalyze();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleFinishTest = useCallback(async (answers: UserAnswer[]) => {
-    setUserAnswers(answers);
-    await performAnalysis(answers);
-  }, [performAnalysis]);
-
-  const resetApp = () => {
-    setAppState(AppState.SELECT_AGE);
-    setQuestions([]);
-    setTestResult(null);
-    setError(null);
-    setIsLoading(false);
-    setLastSelectedAge(null);
-    setUserAnswers(null);
-  };
-  
-  const handleRetry = () => {
-    setError(null);
-    if (appState === AppState.SELECT_AGE && lastSelectedAge) {
-      // Retry test generation
-      handleStartTest(lastSelectedAge);
-    } else if (appState === AppState.SHOWING_RESULTS && userAnswers) {
-      // Retry analysis
-      performAnalysis(userAnswers);
-    } else {
-      // Fallback for any other unexpected error state
-      resetApp();
-    }
-  };
-
-  const renderContent = () => {
-    if (isLoading) {
-      return <div className="flex items-center justify-center min-h-screen"><LoadingSpinner message={loadingMessage} /></div>;
-    }
-    
-    if (error) {
-      // Display error only in states where a retry action is meaningful
-      if (appState === AppState.SELECT_AGE || appState === AppState.SHOWING_RESULTS) {
-        return <div className="flex items-center justify-center min-h-screen"><ErrorDisplay message={error} onRetry={handleRetry} /></div>;
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
       }
-    }
-    
-    switch (appState) {
-      case AppState.SELECT_AGE:
-        return <AgeSelection onSelectAge={handleStartTest} />;
-      case AppState.TAKING_TEST:
-        return <Quiz questions={questions} onSubmit={handleFinishTest} />;
-      case AppState.SHOWING_RESULTS:
-        // By the time we are here, loading is false and error is handled above.
-        return testResult ? <Results result={testResult} onReset={resetApp} /> : null;
-      default:
-        return <AgeSelection onSelectAge={handleStartTest} />;
-    }
-  };
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
 
   return (
-    <main className="font-sans">
-      {renderContent()}
-    </main>
+    <div className="bg-brand-dark min-h-screen text-gray-200 font-sans">
+      <Header isScrolled={isScrolled} />
+      <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-white">لوحة المعلومات</h1>
+          <button
+            onClick={fetchDataAndAnalyze}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-gray-medium hover:bg-brand-gray-light border border-brand-gray-light rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ArrowPathIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>{isLoading ? 'جاري التحليل...' : 'تحديث التحليل'}</span>
+          </button>
+        </div>
+
+        {error && (
+            <Card className="bg-red-900 border-red-700 mb-6">
+              <p className="text-white text-center font-semibold">{error}</p>
+            </Card>
+        )}
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <KeyMetrics analysis={marketAnalysis} isLoading={isLoading} />
+            <PriceChart data={marketAnalysis?.chartData} isLoading={isLoading} />
+            <NewsFeed articles={marketAnalysis?.newsFeed} isLoading={isLoading} />
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            <PredictionPanel analysis={marketAnalysis} isLoading={isLoading} />
+            <Sources sources={marketAnalysis?.sources} />
+          </div>
+        </div>
+      </main>
+      <footer className="text-center p-6 mt-10 border-t border-brand-gray-light text-gray-600 text-xs">
+        <p>محلل الذهب الجيو-سياسي. البيانات لأغراض العرض فقط والأسعار قد لا تكون دقيقة.</p>
+      </footer>
+    </div>
   );
 };
 

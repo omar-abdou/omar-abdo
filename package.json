@@ -1,5 +1,5 @@
 {
-  "name": "copy-of-منصة-اختبار-الذكاء",
+  "name": "محلل-أسعار-الذهب",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,8 +11,8 @@
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "@google/genai": "^1.7.0",
-    "recharts": "^3.0.2"
+    "@google/genai": "^1.10.0",
+    "recharts": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

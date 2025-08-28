@@ -1,37 +1,43 @@
 
-export enum AppState {
-  SELECT_AGE = 'SELECT_AGE',
-  TAKING_TEST = 'TAKING_TEST',
-  SHOWING_RESULTS = 'SHOWING_RESULTS',
+export interface GoldDataPoint {
+  date: string; // "YYYY-MM-DD"
+  price: number;
 }
 
-export enum AgeGroup {
-  CHILD = '6-10 سنوات',
-  TEEN = '11-16 سنة',
-  ADULT = '17+ سنة',
-}
-
-export interface Question {
-  id: number;
-  questionText: string;
-  options: string[];
-  correctAnswerIndex: number;
-}
-
-export interface UserAnswer {
-  questionId: number;
-  selectedOptionIndex: number;
-}
-
-export interface AnalysisCategory {
-  name: string;
-  score: number;
-  comment: string;
-}
-
-export interface TestResult {
-  estimatedIQ: number;
+export interface NewsArticle {
+  title: string;
+  source: string;
   summary: string;
-  analysis: AnalysisCategory[];
-  recommendations: string[];
+}
+
+export type Sentiment = 'Positive' | 'Negative' | 'Neutral';
+export type ForecastPrediction = 'صعودي' | 'هبوطي' | 'مستقر'; // Bullish, Bearish, Stable in Arabic
+
+export interface Source {
+    uri: string;
+    title: string;
+}
+
+export interface MarketAnalysis {
+  globalPriceUSD: number;
+  localPriceEGP: number;
+  priceChange: {
+    change: number;
+    changePercent: number;
+  };
+  marketSentiment: Sentiment;
+  geopoliticalSummary: string;
+  newsFeed: NewsArticle[];
+  forecast: {
+    shortTerm: {
+      prediction: ForecastPrediction;
+      reasoning: string;
+    };
+    longTerm: {
+      prediction: ForecastPrediction;
+      reasoning: string;
+    };
+  };
+  chartData: GoldDataPoint[];
+  sources?: Source[];
 }

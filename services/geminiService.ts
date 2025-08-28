@@ -1,5 +1,6 @@
+
 import { GoogleGenAI } from "@google/genai";
-import { Question, TestResult, UserAnswer } from '../types';
+import { MarketAnalysis } from '../types';
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -7,97 +8,82 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const parseJsonResponse = <T,>(jsonString: string): T | null => {
-    let cleanJsonString = jsonString.trim();
-    const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-    const match = cleanJsonString.match(fenceRegex);
-    if (match && match[2]) {
-        cleanJsonString = match[2].trim();
-    }
+export async function getMarketAnalysis(): Promise<MarketAnalysis> {
+    const prompt = `
+You are a world-class financial analyst for the Arabic-speaking market, specializing in gold.
+Your task is to provide a comprehensive analysis of the current gold market.
+Using the latest information from Google Search, provide the following information strictly in a single JSON object. Do not add any text, markdown, or commentary outside of the JSON object. The entire response must be parseable JSON.
 
-    try {
-        return JSON.parse(cleanJsonString) as T;
-    } catch (error) {
-        console.error("Failed to parse JSON response:", error);
-        console.error("Original string:", jsonString);
-        return null;
-    }
-};
-
-export const generateIQTest = async (ageGroup: string): Promise<Question[]> => {
-    const prompt = `أنت خبير في علم النفس القياسي. قم بإنشاء اختبار ذكاء من 30 سؤال مناسبة للفئة العمرية '${ageGroup}'. يجب أن تغطي الأسئلة مجالات متنوعة مثل المنطق اللفظي، والتفكير المكاني، والأنماط العددية.
-أرجع الإجابة فقط كمصفوفة JSON صالحة (JSON array). يجب أن يكون الجذر عبارة عن مصفوفة.
-يجب أن تحتوي المصفوفة على 30 كائن أسئلة. كل كائن سؤال يجب أن يتبع بدقة الصيغة التالية:
-{ "id": number, "questionText": "string", "options": ["string", "string", "string", "string"], "correctAnswerIndex": number }
-لا تقم بتضمين المصفوفة داخل كائن آخر. الإجابة يجب أن تكون مصفوفة JSON فقط.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-
-        const parsedObject = parseJsonResponse<any>(response.text);
-        let questions: Question[] | null = null;
-        
-        if (Array.isArray(parsedObject)) {
-            questions = parsedObject;
-        } else if (parsedObject && Array.isArray(parsedObject.questions)) {
-            // Handle cases where the model wraps the array in an object: { "questions": [...] }
-            questions = parsedObject.questions;
-        }
-
-        if (!questions || !Array.isArray(questions) || questions.length === 0) {
-            console.error("Parsed response was not a valid question array:", parsedObject);
-            throw new Error("Failed to generate a valid test from API response.");
-        }
-        return questions;
-    } catch (error) {
-        console.error("Error generating IQ test:", error);
-        throw new Error("لم نتمكن من إنشاء الاختبار. يرجى المحاولة مرة أخرى.");
-    }
-};
-
-export const analyzeResults = async (questions: Question[], answers: UserAnswer[]): Promise<TestResult> => {
-    const prompt = `أنت خبير في علم النفس القياسي. قم بتحليل إجابات المستخدم في اختبار الذكاء التالي.
-الأسئلة والإجابات الصحيحة: ${JSON.stringify(questions.map(q => ({ id: q.id, question: q.questionText, correctOption: q.correctAnswerIndex})))}
-إجابات المستخدم: ${JSON.stringify(answers)}
-
-بناءً على التحليل، قم بإرجاع كائن JSON واحد فقط باللغة العربية بالصيغة التالية:
+The JSON object should have the following structure and content:
 {
-  "estimatedIQ": number,
-  "summary": "string",
-  "analysis": [
-    { "name": "المنطق والاستنتاج", "score": number, "comment": "string" },
-    { "name": "التفكير اللفظي", "score": number, "comment": "string" },
-    { "name": "التصور المكاني", "score": number, "comment": "string" },
-    { "name": "المهارات العددية", "score": number, "comment": "string" }
+  "globalPriceUSD": <number, latest price of gold per ounce in USD>,
+  "localPriceEGP": <number, latest price of a 24k gold gram in Egyptian Pounds (EGP)>,
+  "priceChange": {
+    "change": <number, 24-hour price change in USD for the global price>,
+    "changePercent": <number, 24-hour price change percentage for the global price>
+  },
+  "marketSentiment": <"Positive", "Negative", or "Neutral", based on overall news and price action>,
+  "geopoliticalSummary": "<string, 2-3 sentence summary in Arabic of the current geopolitical factors influencing the gold price>",
+  "newsFeed": [
+    {
+      "title": "<string, news headline in Arabic>",
+      "source": "<string, source of the news, e.g., 'Reuters'>",
+      "summary": "<string, a brief one-sentence summary of the article in Arabic>"
+    }
   ],
-  "recommendations": ["string", "string", "string"]
+  "forecast": {
+    "shortTerm": {
+      "prediction": "<'صعودي' | 'هبوطي' | 'مستقر', prediction for the next 7 days>",
+      "reasoning": "<string, brief reasoning in Arabic>"
+    },
+    "longTerm": {
+      "prediction": "<'صعودي' | 'هبوطي' | 'مستقر', prediction for the next 3 months>",
+      "reasoning": "<string, brief reasoning in Arabic>"
+    }
+  },
+  "chartData": [
+    // Array of 30 objects representing plausible historical daily prices for the last 30 days for the global price, ending with today's price.
+    { "date": "YYYY-MM-DD", "price": <number> },
+    ...
+  ]
 }
-تأكد من أن درجة الذكاء المقدرة تتراوح بين 80 و 150. يجب أن تكون كل درجة تحليل من 100. تأكد من أن كل التعليقات والتوصيات بناءة ومفيدة. يجب أن يكون الـ JSON صالحًا تمامًا والجذر عبارة عن كائن JSON واحد.`;
+`;
+
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+            tools: [{ googleSearch: {} }],
+        },
+    });
+
+    // The model might return the JSON wrapped in markdown or with other text.
+    // We need to extract the raw JSON string before parsing.
+    let jsonText = response.text.trim();
+    const startIndex = jsonText.indexOf('{');
+    const endIndex = jsonText.lastIndexOf('}');
+
+    if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+        console.error("No valid JSON object found in Gemini response:", response.text);
+        throw new Error("Received a response without a valid JSON object from the AI.");
+    }
+    
+    jsonText = jsonText.substring(startIndex, endIndex + 1);
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-04-17",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
+        const analysisData = JSON.parse(jsonText) as Omit<MarketAnalysis, 'sources'>;
+        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map(chunk => chunk.web) ?? [];
 
-        const result = parseJsonResponse<TestResult>(response.text);
-        if (!result || !result.estimatedIQ) {
-            console.error("Parsed response was not a valid result object:", response.text);
-            throw new Error("Failed to analyze results from API response.");
+        return {
+            ...analysisData,
+            sources: sources.map(s => ({ uri: s.uri, title: s.title || s.uri }))
+        };
+
+    } catch (e) {
+        console.error("Failed to parse Gemini response for market analysis:", jsonText);
+        if (e instanceof Error) {
+            console.error("Parse error:", e.message);
         }
-        return result;
-
-    } catch (error) {
-        console.error("Error analyzing results:", error);
-        throw new Error("لم نتمكن من تحليل النتائج. يرجى المحاولة مرة أخرى.");
+        throw new Error("Received an invalid format from the AI for market analysis.");
     }
-};
+}
