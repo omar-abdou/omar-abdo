@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI } from "@google/genai";
 import { MarketAnalysis } from '../types';
 
@@ -42,8 +43,8 @@ The JSON object should have the following structure and content:
     }
   },
   "chartData": [
-    // Array of 30 objects representing plausible historical daily prices for the last 30 days for the global price, ending with today's price.
-    { "date": "YYYY-MM-DD", "price": <number> },
+    // Array of 30 objects representing plausible historical daily prices for the last 30 days for the global price, ending with today's price. Include the daily value for the USD Index (DXY) as well.
+    { "date": "YYYY-MM-DD", "price": <number>, "dxy": <number> },
     ...
   ]
 }

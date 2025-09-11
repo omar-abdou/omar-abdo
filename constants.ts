@@ -1,29 +1,31 @@
-import { GoldDataPoint, NewsArticle } from './types';
+// Fix: Changed GoldDataPoint to ChartDataPoint to align with existing types.
+import { ChartDataPoint, NewsArticle } from './types';
 
-export const MOCK_GOLD_DATA: GoldDataPoint[] = [
-  { date: "2023-10-01", price: 1848.70 },
-  { date: "2023-10-02", price: 1827.20 },
-  { date: "2023-10-03", price: 1821.50 },
-  { date: "2023-10-04", price: 1831.80 },
-  { date: "2023-10-05", price: 1820.50 },
-  { date: "2023-10-06", price: 1832.10 },
-  { date: "2023-10-09", price: 1860.70 },
-  { date: "2023-10-10", price: 1872.90 },
-  { date: "2023-10-11", price: 1867.80 },
-  { date: "2023-10-12", price: 1883.40 },
-  { date: "2023-10-13", price: 1931.50 },
-  { date: "2023-10-16", price: 1920.00 },
-  { date: "2023-10-17", price: 1936.30 },
-  { date: "2023-10-18", price: 1947.20 },
-  { date: "2023-10-19", price: 1978.50 },
-  { date: "2023-10-20", price: 1982.20 },
-  { date: "2023-10-23", price: 1972.60 },
-  { date: "2023-10-24", price: 1985.90 },
-  { date: "2023-10-25", price: 1990.70 },
-  { date: "2023-10-26", price: 2005.60 },
-  { date: "2023-10-27", price: 2009.20 },
-  { date: "2023-10-30", price: 1998.50 },
-  { date: "2023-10-31", price: 1997.50 },
+// Fix: Updated mock data to include 'dxy' property as required by ChartDataPoint type.
+export const MOCK_GOLD_DATA: ChartDataPoint[] = [
+  { date: "2023-10-01", price: 1848.70, dxy: 106.20 },
+  { date: "2023-10-02", price: 1827.20, dxy: 106.70 },
+  { date: "2023-10-03", price: 1821.50, dxy: 107.10 },
+  { date: "2023-10-04", price: 1831.80, dxy: 106.80 },
+  { date: "2023-10-05", price: 1820.50, dxy: 106.40 },
+  { date: "2023-10-06", price: 1832.10, dxy: 106.10 },
+  { date: "2023-10-09", price: 1860.70, dxy: 106.00 },
+  { date: "2023-10-10", price: 1872.90, dxy: 105.70 },
+  { date: "2023-10-11", price: 1867.80, dxy: 105.80 },
+  { date: "2023-10-12", price: 1883.40, dxy: 106.50 },
+  { date: "2023-10-13", price: 1931.50, dxy: 106.30 },
+  { date: "2023-10-16", price: 1920.00, dxy: 106.20 },
+  { date: "2023-10-17", price: 1936.30, dxy: 106.20 },
+  { date: "2023-10-18", price: 1947.20, dxy: 106.50 },
+  { date: "2023-10-19", price: 1978.50, dxy: 106.20 },
+  { date: "2023-10-20", price: 1982.20, dxy: 106.10 },
+  { date: "2023-10-23", price: 1972.60, dxy: 105.50 },
+  { date: "2023-10-24", price: 1985.90, dxy: 105.70 },
+  { date: "2023-10-25", price: 1990.70, dxy: 106.00 },
+  { date: "2023-10-26", price: 2005.60, dxy: 106.50 },
+  { date: "2023-10-27", price: 2009.20, dxy: 106.60 },
+  { date: "2023-10-30", price: 1998.50, dxy: 106.10 },
+  { date: "2023-10-31", price: 1997.50, dxy: 106.70 },
 ];
 
 export const MOCK_NEWS_ARTICLES: NewsArticle[] = [

@@ -1,7 +1,9 @@
 
-export interface GoldDataPoint {
+
+export interface ChartDataPoint {
   date: string; // "YYYY-MM-DD"
   price: number;
+  dxy: number;
 }
 
 export interface NewsArticle {
@@ -38,6 +40,6 @@ export interface MarketAnalysis {
       reasoning: string;
     };
   };
-  chartData: GoldDataPoint[];
+  chartData: ChartDataPoint[];
   sources?: Source[];
 }
